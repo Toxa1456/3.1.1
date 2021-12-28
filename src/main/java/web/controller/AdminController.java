@@ -10,12 +10,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import web.model.Role;
 import web.model.User;
-import web.repositories.RoleRepository;
-import web.repositories.UserRepository;
-
+import web.service.RoleService;
+import web.service.UserService;
 import javax.validation.Valid;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,18 +21,18 @@ import java.util.Set;
 @RequestMapping("/admin")
 public class AdminController {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final UserService userService;
+    private final RoleService roleService;
 
     @Autowired
-    public AdminController(UserRepository userRepository, RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
-        this.userRepository = userRepository;
+    public AdminController(UserService userRepository, RoleService roleRepository) {
+        this.roleService = roleRepository;
+        this.userService = userRepository;
     }
 
     @RequestMapping("/")
     public String getUsers(ModelMap model) {
-        model.addAttribute("Users", userRepository.findAll());
+        model.addAttribute("Users", userService.findAllUsers());
         return "admin";
     }
 
@@ -44,29 +42,27 @@ public class AdminController {
             return "addUser";
         }
         if (role.get().equalsIgnoreCase("1,2")){
-            Set<Role> roles = new HashSet<>();
-            roles.add(roleRepository.findById(1L).get());
-            roles.add(roleRepository.findById(2L).get());
+            Set<Role> roles = roleService.findAllRoles();
             user.setRoles(roles);
         } else {
             if (role.get().equals("1")) {
-                user.setRoles(Collections.singleton(roleRepository.findById(2L).get()));
+                user.setRoles(Collections.singleton(roleService.findRoleById(2L)));
             } else {
                 if (role.get().equals("2")) {
-                    user.setRoles(Collections.singleton(roleRepository.findById(1L).get()));
+                    user.setRoles(Collections.singleton(roleService.findRoleById(1L)));
                 } else {
                     return "addUser";
                 }
             }
         }
-        userRepository.save(user);
+        userService.save(user);
         return "redirect:/admin/";
     }
 
     @RequestMapping("/update/{id}")
     public String updateUser(@RequestParam Optional<String> role, @PathVariable("id") long id, @Valid User user, BindingResult result) {
         if (result.hasErrors()) {
-            User original = userRepository.findById(id).get();
+            User original = userService.findById(id);
             user.setName(original.getName());
             user.setPassword(original.getPassword());
             user.setEmail(original.getEmail());
@@ -75,32 +71,27 @@ public class AdminController {
             return "changeUser";
         }
         if (role.get().equalsIgnoreCase("1,2")) {
-            Set<Role> roles = new HashSet<>();
-            roles.add(roleRepository.findById(1L).get());
-            roles.add(roleRepository.findById(2L).get());
+            Set<Role> roles = roleService.findAllRoles();
             user.setRoles(roles);
         } else {
             if (role.get().equals("1")) {
-                user.setRoles(Collections.singleton(roleRepository.findById(2L).get()));
+                user.setRoles(Collections.singleton(roleService.findRoleById(2L)));
             } else {
                 if (role.get().equals("2")) {
-                    user.setRoles(Collections.singleton(roleRepository.findById(1L).get()));
+                    user.setRoles(Collections.singleton(roleService.findRoleById(1L)));
                 } else {
                     return "changeUser";
                 }
             }
         }
-        userRepository.save(user);
+        userService.save(user);
 
         return "redirect:/admin/";
     }
 
     @RequestMapping("/delete/{id}")
     public String deleteUser(@PathVariable("id") long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Invalid user Id:" + id));
-        userRepository.delete(user);
+        userService.deleteById(id);
         return "redirect:/admin/";
     }
-
-
 }
